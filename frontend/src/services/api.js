@@ -1,13 +1,19 @@
 import axios from "axios";
 
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
+
 const api = axios.create({
-  baseURL: "http://127.0.0.1:8000",
+  baseURL: API_BASE_URL,
 });
 
+/* WORKFLOWS */
 export const createWorkflow = (data) => api.post("/workflows/", data);
 export const getWorkflows = () => api.get("/workflows/");
 
+/* RUN */
 export const runWorkflow = (data) => api.post("/runs/", data);
 export const getLatestRuns = () => api.get("/runs/latest");
 
+/* STATUS */
 export const getSystemHealth = () => api.get("/health/");
