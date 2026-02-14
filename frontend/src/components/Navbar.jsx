@@ -26,7 +26,7 @@ export default function Navbar() {
 
   return (
     <div style={navStyle}>
-      <div style={{ fontWeight: 700 }}>
+      <div className="text-xl" style={{ fontWeight: 700 }}>
         Workflow Builder Lite
       </div>
 
