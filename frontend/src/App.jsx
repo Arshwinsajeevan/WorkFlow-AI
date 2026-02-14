@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-
+import Layout from "./components/Layout";
 import Home from "./pages/Home";
 import Builder from "./pages/Builder";
 import Run from "./pages/Run";
@@ -9,13 +9,15 @@ import Status from "./pages/Status";
 function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/builder" element={<Builder />} />
-        <Route path="/run" element={<Run />} />
-        <Route path="/history" element={<History />} />
-        <Route path="/status" element={<Status />} />
-      </Routes>
+      <Layout>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/builder" element={<Builder />} />
+          <Route path="/run" element={<Run />} />
+          <Route path="/history" element={<History />} />
+          <Route path="/status" element={<Status />} />
+        </Routes>
+      </Layout>
     </BrowserRouter>
   );
 }
