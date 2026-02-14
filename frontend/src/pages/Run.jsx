@@ -118,9 +118,11 @@ export default function Run() {
                     {s.step.replace("_", " ")}
                   </div>
 
-                  <pre className="text-sm text-gray-300 whitespace-pre-wrap">
-                    {JSON.stringify(s.output, null, 2)}
-                  </pre>
+                  <div className="whitespace-pre-wrap text-sm text-gray-300">
+                    {typeof s.output === "string"
+                      ? s.output
+                      : JSON.stringify(s.output, null, 2)}
+                  </div>
                 </div>
               ))}
             </div>
