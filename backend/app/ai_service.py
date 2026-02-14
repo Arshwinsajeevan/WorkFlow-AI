@@ -3,21 +3,35 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-AI_MODE = os.getenv("AI_MODE", "mock")
-LLM_PROVIDER = os.getenv("LLM_PROVIDER", "mock")
+AI_MODE = os.getenv("AI_MODE", "mock").lower()
+LLM_PROVIDER = os.getenv("LLM_PROVIDER", "mock").lower()
 LLM_API_KEY = os.getenv("LLM_API_KEY")
 
 
-# --- OPTIONAL GROQ IMPORT ---
-try:
-    from groq import Groq
-    groq_client = Groq(api_key=LLM_API_KEY) if LLM_API_KEY else None
-except:
-    groq_client = None
+print("AI CONFIG →", {
+    "AI_MODE": AI_MODE,
+    "LLM_PROVIDER": LLM_PROVIDER,
+    "KEY_PRESENT": bool(LLM_API_KEY)
+})
 
 
-# --- MOCK IMPLEMENTATIONS ---
+# ================================
+# GROQ CLIENT INIT (SAFE)
+# ================================
+groq_client = None
 
+if LLM_PROVIDER == "groq" and LLM_API_KEY:
+    try:
+        from groq import Groq
+        groq_client = Groq(api_key=LLM_API_KEY)
+        print("✅ Groq client initialized")
+    except Exception as e:
+        print("❌ Groq import/init failed:", str(e))
+
+
+# ================================
+# MOCK IMPLEMENTATIONS
+# ================================
 def mock_summarize(text):
     return text[:150] + "..." if len(text) > 150 else text
 
@@ -40,29 +54,58 @@ def mock_tag_category(text):
     return "General"
 
 
-# --- REAL LLM CALL ---
+# ================================
+# GROQ CALL WRAPPER (SAFE)
+# ================================
 def groq_chat(prompt):
     if not groq_client:
+        print("⚠ GROQ CLIENT NOT INITIALIZED")
         return None
 
     try:
+        print("🚀 Calling Groq API...")
+
         completion = groq_client.chat.completions.create(
-            model="llama3-8b-8192",
-            messages=[{"role": "user", "content": prompt}],
+            model="llama-3.1-8b-instant",
+            messages=[
+                {"role": "user", "content": prompt}
+            ],
             temperature=0.3,
+            max_tokens=300
         )
 
-        return completion.choices[0].message.content
-    except Exception:
+        print("Groq raw object received")
+
+        if not completion:
+            print("No completion returned")
+            return None
+
+        # SAFE EXTRACTION
+        if hasattr(completion, "choices") and completion.choices:
+            choice = completion.choices[0]
+
+            if hasattr(choice, "message") and choice.message:
+                msg = choice.message
+
+                if hasattr(msg, "content") and msg.content:
+                    return msg.content.strip()
+
+                # fallback if content missing
+                return str(msg)
+
+        print("Unexpected Groq response structure")
         return None
 
+    except Exception as e:
+        print("🔥 GROQ ERROR:", str(e))
+        return None
 
-# --- PUBLIC AI FUNCTIONS ---
-
+# ================================
+# PUBLIC AI FUNCTIONS
+# ================================
 def ai_summarize(text):
     if AI_MODE == "real" and LLM_PROVIDER == "groq":
-        prompt = f"Summarize this text in 3-4 lines:\n{text}"
-        result = groq_chat(prompt)
+        result = groq_chat(f"Summarize this text in 3-4 lines:\n{text}")
         if result:
             return result
 
@@ -71,8 +114,7 @@ def ai_summarize(text):
 
 def ai_extract_points(text):
     if AI_MODE == "real" and LLM_PROVIDER == "groq":
-        prompt = f"Extract 3 key bullet points from:\n{text}"
-        result = groq_chat(prompt)
+        result = groq_chat(f"Extract 3 key bullet points from:\n{text}")
         if result:
             return result
 
@@ -81,9 +123,55 @@ def ai_extract_points(text):
 
 def ai_tag_category(text):
     if AI_MODE == "real" and LLM_PROVIDER == "groq":
-        prompt = f"Classify this text into one category: Technology, Finance, Health, General:\n{text}"
-        result = groq_chat(prompt)
+        result = groq_chat(
+            f"Classify into ONE category (Technology, Finance, Health, General):\n{text}"
+        )
         if result:
             return result
 
     return mock_tag_category(text)
+
+
+# ================================
+# LLM HEALTH TEST
+# ================================
+def test_llm_connection():
+
+    if AI_MODE != "real":
+        return {
+            "status": "mock_mode",
+            "message": "Running without external LLM"
+        }
+
+    if LLM_PROVIDER == "groq":
+
+        if not groq_client:
+            return {
+                "status": "error",
+                "message": "Groq client not initialized"
+            }
+
+        try:
+            result = groq_chat("Say OK and nothing else.")
+
+
+            if result:
+                return {
+                    "status": "connected",
+                    "provider": "groq"
+                }
+
+            return {
+                "status": "failed",
+                "message": "LLM returned empty response"
+            }
+
+        except Exception as e:
+            return {
+                "status": "error",
+                "message": str(e)
+            }
+
+    return {
+        "status": "unknown_provider"
+    }
