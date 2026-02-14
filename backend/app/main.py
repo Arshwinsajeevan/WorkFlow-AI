@@ -1,10 +1,19 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from .database import Base, engine
 from .routes import workflow_routes, run_routes, health_routes
 
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Workflow Builder Lite API")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app.include_router(workflow_routes.router)
 app.include_router(run_routes.router)
